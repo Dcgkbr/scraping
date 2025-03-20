@@ -1,0 +1,99 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+import os
+import re
+
+# --- Data Loading Functions ---
+def load_scraped_data(file_path):
+    """Load the scraped data from an Excel file."""
+    try:
+        data = pd.read_excel(file_path, sheet_name=None)
+        print(f"Data loaded successfully from {file_path}")
+        return data
+    except Exception as e:
+        print(f"Error loading data from {file_path}: {e}")
+        return None
+
+def load_all_data():
+    """Load all scraped league data from the specified folder."""
+    leagues = ['Bundesliga', 'Premier_League', 'La_Liga', 'Champions_League']
+    data = {}
+    base_path = "C:/Users/azomi/OneDrive/Desktop/me2/"
+    for league in leagues:
+        file_path = os.path.join(base_path, f'{league}_data.xlsx')
+        if os.path.exists(file_path):
+            data[league] = load_scraped_data(file_path)
+        else:
+            print(f"File {file_path} does not exist.")
+    return data
+
+def inspect_data_structure(data):
+    """Print out keys of each league's data."""
+    print("Data structure loaded:")
+    for league, league_data in data.items():
+        print(f"League: {league}")
+        print(f"Keys in {league} data: {league_data.keys()}")
+
+# --- Sheet Selection & Preprocessing Functions ---
+def select_overall_sheet_key(league, league_data):
+    """Return the first sheet key that contains '_overall' for the given league."""
+    overall_keys = [key for key in league_data.keys() if "_overall" in key]
+    if not overall_keys:
+        return None
+    
+    # Sort keys to get the most recent season if possible
+    # This assumes the keys follow the pattern 'resultsYEAR-YEARxxx_overall'
+    def extract_year(key):
+        match = re.search(r'results(\d{4})-', key)
+        return int(match.group(1)) if match else 0
+    
+    overall_keys.sort(key=extract_year, reverse=True)
+    return overall_keys[0]
+
+def preprocess_data(league_data, league):
+    """
+    Preprocess the overall data for a league.
+    Extract features for model training.
+    """
+    sheet_key = select_overall_sheet_key(league, league_data)
+    if sheet_key is None:
+        print(f"Missing overall sheet for {league}.")
+        return None, None
+    
+    stats = league_data[sheet_key]
+    print(f"Columns in {league} overall table: {stats.columns.tolist()}")
+    
+    # Check for different possible column names
+    win_cols = ['W', 'wins', 'Wins']
+    draw_cols = ['D', 'draws', 'Draws']
+    loss_cols = ['L', 'losses', 'Losses']
+    game_cols = ['MP', 'games', 'Games', 'matches', 'Matches']
+    goals_for_cols = ['GF', 'goals_for', 'Goals For', 'F']
+    goals_against_cols = ['GA', 'goals_against', 'Goals Against', 'A']
+    
+    # Find which columns exist in the data
+    win_col = next((col for col in win_cols if col in stats.columns), None)
+    draw_col = next((col for col in draw_cols if col in stats.columns), None)
+    loss_col = next((col for col in loss_cols if col in stats.columns), None)
+    game_col = next((col for col in game_cols if col in stats.columns), None)
+    gf_col = next((col for col in goals_for_cols if col in stats.columns), None)
+    ga_col = next((col for col in goals_against_cols if col in stats.columns), None)
+    
+    if win_col is None or game_col is None:
+        print(f"Required columns not found in {league} overall table.")
+        print("Available columns are:", stats.columns.tolist())
+        return None, None
+    
+    try:
+        # Convert columns to numeric
+        for col in [win_col, draw_col, loss_col, game_col, gf_col, ga_col]:
+            if col is not None:
+                stats[col] = pd.to_numeric(stats[col], errors='coerce')
+        
+        # Filter out rows with NaN values
+        required_cols = [col for col in [win_col, game_col] if col is not None]
+        valid_data = stats.dropna(subset=required_cols)
+        
