@@ -1,0 +1,50 @@
+  # Ensure no division by zero
+        valid_data = valid_data[valid_data[game_col] > 0]
+        
+        # Create features
+        features = pd.DataFrame()
+        features['win_percentage'] = valid_data[win_col] / valid_data[game_col]
+        
+        # Add more features if available
+        if draw_col is not None:
+            features['draw_percentage'] = valid_data[draw_col] / valid_data[game_col]
+        if loss_col is not None:
+            features['loss_percentage'] = valid_data[loss_col] / valid_data[game_col]
+        if gf_col is not None and ga_col is not None:
+            features['goals_ratio'] = valid_data[gf_col] / valid_data[ga_col].replace(0, 0.1)  # Avoid division by zero
+            features['avg_goals_scored'] = valid_data[gf_col] / valid_data[game_col]
+            features['avg_goals_conceded'] = valid_data[ga_col] / valid_data[game_col]
+        
+        # Target: 1 if win_percentage > 0.5, else 0 (simplified binary classification)
+        target = np.where(features['win_percentage'] > 0.5, 1, 0)
+        
+        return features, target
+    
+    except Exception as e:
+        print(f"Error processing {league} data: {e}")
+        return None, None
+
+# --- Model Training & Prediction Functions ---
+def train_model(features, target):
+    """Train a Random Forest model on the extracted features and target."""
+    if len(features) < 2:
+        print("Not enough data points to train the model.")
+        return None
+    
+    X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, random_state=42)
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    print(f"Model accuracy: {accuracy * 100:.2f}%")
+    return model
+
+# --- Team Performance Analysis ---
+def get_team_stats(league_data, league, team_name):
+    """Extract team statistics from league data."""
+    sheet_key = select_overall_sheet_key(league, league_data)
+    if sheet_key is None:
+        return None
+    
+    stats = league_data[sheet_key].copy()
+    
