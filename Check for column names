@@ -1,0 +1,39 @@
+ # Check for column names
+    win_cols = ['W', 'wins', 'Wins']
+    draw_cols = ['D', 'draws', 'Draws']
+    loss_cols = ['L', 'losses', 'Losses']
+    game_cols = ['MP', 'games', 'Games', 'matches', 'Matches']
+    gf_cols = ['GF', 'goals_for', 'Goals For', 'F']
+    ga_cols = ['GA', 'goals_against', 'Goals Against', 'A']
+    
+    # Find available stats columns
+    win_col = next((col for col in win_cols if col in home_stats), None)
+    draw_col = next((col for col in draw_cols if col in home_stats), None)
+    loss_col = next((col for col in loss_cols if col in home_stats), None)
+    game_col = next((col for col in game_cols if col in home_stats), None)
+    gf_col = next((col for col in gf_cols if col in home_stats), None)
+    ga_col = next((col for col in ga_cols if col in home_stats), None)
+    
+    if None in [win_col, game_col]:
+        print("Required stats columns not found.")
+        return None
+    
+    # Calculate team performance metrics
+    try:
+        home_win_pct = float(home_stats[win_col]) / float(home_stats[game_col])
+        away_win_pct = float(away_stats[win_col]) / float(away_stats[game_col])
+        
+        # More advanced metrics if available
+        home_metrics = {'win_pct': home_win_pct}
+        away_metrics = {'win_pct': away_win_pct}
+        
+        if draw_col:
+            home_metrics['draw_pct'] = float(home_stats[draw_col]) / float(home_stats[game_col])
+            away_metrics['draw_pct'] = float(away_stats[draw_col]) / float(away_stats[game_col])
+        
+        if gf_col and ga_col:
+            home_metrics['avg_scored'] = float(home_stats[gf_col]) / float(home_stats[game_col])
+            home_metrics['avg_conceded'] = float(home_stats[ga_col]) / float(home_stats[game_col])
+            away_metrics['avg_scored'] = float(away_stats[gf_col]) / float(away_stats[game_col])
+            away_metrics['avg_conceded'] = float(away_stats[ga_col]) / float(away_stats[game_col])
+        
