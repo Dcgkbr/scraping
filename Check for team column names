@@ -1,0 +1,32 @@
+
+    # Check for team column names
+    team_cols = ['team', 'Team', 'Squad']
+    team_col = next((col for col in team_cols if col in stats.columns), None)
+    
+    if team_col is None:
+        print(f"Team column not found in {league} data.")
+        return None
+    
+    # Standardize team names for matching
+    stats['standardized_name'] = stats[team_col].str.lower().str.strip()
+    team_name_std = team_name.lower().strip()
+    
+    # Try to find the team in the data
+    team_data = stats[stats['standardized_name'].str.contains(team_name_std, na=False)]
+    
+    if team_data.empty:
+        # Try to find close matches
+        all_teams = stats[team_col].str.lower().tolist()
+        print(f"Team '{team_name}' not found. Available teams: {', '.join(stats[team_col].tolist())}")
+        return None
+    
+    return team_data.iloc[0].to_dict()
+
+def analyze_match(league_data, league, home_team, away_team):
+    """Analyze a match between two teams and return betting predictions."""
+    home_stats = get_team_stats(league_data, league, home_team)
+    away_stats = get_team_stats(league_data, league, away_team)
+    
+    if home_stats is None or away_stats is None:
+        return None
+    
