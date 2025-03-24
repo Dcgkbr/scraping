@@ -1,0 +1,13 @@
+ 
+    # Find available stats columns
+    win_col = next((col for col in win_cols if col in home_stats), None)
+    draw_col = next((col for col in draw_cols if col in home_stats), None)
+    loss_col = next((col for col in loss_cols if col in home_stats), None)
+    game_col = next((col for col in game_cols if col in home_stats), None)
+    gf_col = next((col for col in gf_cols if col in home_stats), None)
+    ga_col = next((col for col in ga_cols if col in home_stats), None)
+    
+    if None in [win_col, game_col]:
+        print("Required stats columns not found.")
+        return None
+    
