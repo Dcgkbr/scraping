@@ -1,0 +1,28 @@
+ # Generate betting predictions
+        predictions = generate_betting_predictions(home_team, away_team, home_metrics, away_metrics)
+        return predictions
+    
+    except (KeyError, TypeError, ValueError) as e:
+        print(f"Error calculating metrics: {e}")
+        return None
+
+def generate_betting_predictions(home_team, away_team, home_metrics, away_metrics):
+    """Generate predictions for various betting markets based on team metrics."""
+    # Calculate prediction probabilities
+    home_strength = home_metrics['win_pct'] * 1.1  # Home advantage factor
+    away_strength = away_metrics['win_pct'] * 0.9  # Away disadvantage
+    
+    # 1X2 probabilities
+    total_strength = home_strength + away_strength
+    if 'draw_pct' in home_metrics and 'draw_pct' in away_metrics:
+        draw_prob = (home_metrics['draw_pct'] + away_metrics['draw_pct']) / 2
+        # Normalize to make sure probabilities sum to 1
+        draw_prob = min(0.35, draw_prob)  # Cap draw probability
+        home_win_prob = home_strength / total_strength * (1 - draw_prob)
+        away_win_prob = away_strength / total_strength * (1 - draw_prob)
+    else:
+        # Without draw data, use simple ratio
+        draw_prob = 0.25  # Average draw probability in football
+        home_win_prob = home_strength / total_strength * (1 - draw_prob)
+        away_win_prob = away_strength / total_strength * (1 - draw_prob)
+    
